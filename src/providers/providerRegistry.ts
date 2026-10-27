@@ -1,20 +1,23 @@
 import { IVideoProvider } from './types';
+import { RealisticAiProvider } from './RealisticAiProvider';
 import { DemoProvider } from './DemoProvider';
 import { HuggingFaceGradioProvider } from './HuggingFaceGradioProvider';
 import { CustomProvider } from './CustomProvider';
 
-export type ProviderType = 'demo' | 'huggingface' | 'custom';
+export type ProviderType = 'realistic-ai' | 'huggingface' | 'custom' | 'demo';
 
 class ProviderManager {
-  private currentType: ProviderType = 'demo';
+  private currentType: ProviderType = 'realistic-ai';
+  private realisticAiProvider: RealisticAiProvider;
   private demoProvider: DemoProvider;
   private hfProvider: HuggingFaceGradioProvider;
   private customProvider: CustomProvider;
 
   constructor() {
+    this.realisticAiProvider = new RealisticAiProvider();
     this.demoProvider = new DemoProvider('normal', 'none');
     this.hfProvider = new HuggingFaceGradioProvider({
-      spaceId: 'Wan-AI/Wan2.1-T2V-14B',
+      spaceId: 'multimodalart/wan2-1-fast',
     });
     this.customProvider = new CustomProvider({
       endpointUrl: 'http://127.0.0.1:8188',
@@ -23,6 +26,8 @@ class ProviderManager {
 
   public getActiveProvider(): IVideoProvider {
     switch (this.currentType) {
+      case 'realistic-ai':
+        return this.realisticAiProvider;
       case 'huggingface':
         return this.hfProvider;
       case 'custom':
@@ -41,6 +46,10 @@ class ProviderManager {
     this.currentType = type;
   }
 
+  public getRealisticAiProvider(): RealisticAiProvider {
+    return this.realisticAiProvider;
+  }
+
   public getDemoProvider(): DemoProvider {
     return this.demoProvider;
   }
@@ -55,3 +64,4 @@ class ProviderManager {
 }
 
 export const providerManager = new ProviderManager();
+

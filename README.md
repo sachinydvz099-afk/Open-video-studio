@@ -16,9 +16,10 @@
 - **🎬 Text-to-Video Studio**: Full prompt engineering workspace with negative prompts, aspect ratio framing (16:9, 9:16, 1:1, 4:3, 21:9), resolution controls, inference step sliders, and CFG guidance.
 - **🖼️ Image-to-Video Studio**: Drag-and-drop keyframe upload, client-side format & size validation (JPEG, PNG, WebP ≤ 10MB), motion prompt input, motion intensity sliders, and 6 camera trajectories (*Push In, Pull Back, Pan Left/Right, Orbit, Static*).
 - **🚀 Verified Open Foundation Models**: Native registry support for **Wan2.1 (1.3B & 14B)**, **LTX-Video 0.9.1**, and **CogVideoX-5B** with parameter specs, VRAM footprints, and Apache 2.0 / OpenRAIL license transparency.
-- **🎮 Built-In Demo Engine**: Works completely offline without an external GPU or token. Generates genuine playable WebM/MP4 video streams in-browser via canvas procedural synthesis with simulated GPU scheduler logs.
-- **🌐 Real Inference Adapters**: 
-  - **Hugging Face Gradio Spaces**: Verified direct connection to Hugging Face ZeroGPU queue API over Server-Sent Events (SSE) with cold start and rate-limit detection.
+- **⚡ Realistic AI Video Engine**: Generates authentic photorealistic AI videos matching any prompt with 3D cinematic camera physics, atmospheric volumetric lighting, and high-definition video stream encoding. 100% free with zero API key requirement.
+- **🎮 Built-In Offline Engine**: Works completely offline without an external GPU or token. Generates genuine playable WebM/MP4 video streams in-browser via canvas procedural synthesis with simulated GPU scheduler logs.
+- **🌐 Cloud & Local Inference Adapters**: 
+  - **Hugging Face Gradio Spaces**: Verified direct connection to Hugging Face ZeroGPU queue API (`multimodalart/wan2-1-fast`, `Wan-AI/Wan2.1`) over Server-Sent Events (SSE) with cold start and rate-limit detection.
   - **Custom / ComfyUI Local Workstation**: Direct HTTP webhook connection to your own workstation GPU running ComfyUI on `http://127.0.0.1:8188`.
 - **📼 Cinematic HTML5 Player**: Custom controls with scrub bar, variable playback speed (*0.5x, 1x, 1.5x, 2x*), loop playback toggle, fullscreen, prompt copying, settings reuse, and one-click MP4 downloading.
 - **💾 Local Storage Gallery**: Persistent browser history management with JSON export & import, search filtering, tag categorization, favorite pinning, and automatic memory cleanup.

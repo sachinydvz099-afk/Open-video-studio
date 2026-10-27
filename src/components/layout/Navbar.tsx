@@ -118,7 +118,9 @@ export const Navbar: React.FC = () => {
                 }`}
               />
               <span className="text-slate-300">
-                {activeProviderType === 'demo'
+                {activeProviderType === 'realistic-ai'
+                  ? '⚡ Realistic AI'
+                  : activeProviderType === 'demo'
                   ? 'Demo (Offline)'
                   : activeProviderType === 'huggingface'
                   ? 'Hugging Face'

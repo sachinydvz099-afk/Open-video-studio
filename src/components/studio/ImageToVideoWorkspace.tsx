@@ -4,6 +4,7 @@ import { ImageDropzone } from './ImageDropzone';
 import { PromptEditor } from './PromptEditor';
 import { ModelSelector } from './ModelSelector';
 import { GenerationProgressCard } from './GenerationProgressCard';
+import { ProviderSelectorBar } from './ProviderSelectorBar';
 import { VideoPlayer } from '../player/VideoPlayer';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
@@ -152,6 +153,9 @@ export const ImageToVideoWorkspace: React.FC<ImageToVideoWorkspaceProps> = ({
         </div>
       </div>
 
+      {/* Generation Engine Switcher Bar */}
+      <ProviderSelectorBar />
+
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Form Controls (7 cols) */}
@@ -264,7 +268,7 @@ export const ImageToVideoWorkspace: React.FC<ImageToVideoWorkspaceProps> = ({
               {isGenerating ? 'Synthesizing Animation...' : 'Animate Image to Video'}
             </Button>
             <p className="text-center text-[11px] text-slate-500 mt-2">
-              All uploads remain strictly inside your browser until an authorized inference is triggered.
+              ⚡ Powered by Realistic AI Video Engine. Directly animates your uploaded image with selected 3D camera trajectory.
             </p>
           </div>
         </div>

@@ -43,7 +43,7 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_URL: './'
-          VITE_DEFAULT_PROVIDER: 'demo'
+          VITE_DEFAULT_PROVIDER: 'realistic-ai'
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5

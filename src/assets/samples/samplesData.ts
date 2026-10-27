@@ -119,7 +119,8 @@ export async function generateProceduralDemoVideo(
   promptText: string,
   modelName: string,
   durationSeconds: number = 3,
-  fps: number = 20
+  fps: number = 20,
+  sourceImageDataUrl?: string
 ): Promise<Blob> {
   const width = 640;
   const height = 360;
@@ -129,9 +130,21 @@ export async function generateProceduralDemoVideo(
   canvas.height = height;
   const ctx = canvas.getContext('2d');
 
-  if (!ctx || typeof MediaRecorder === 'undefined') {
+  if (!ctx || typeof MediaRecorder === 'undefined' || !canvas.captureStream) {
     // Return empty blob if MediaRecorder or Canvas not available (e.g. headless mock)
     return new Blob(['simulated-demo-video-content'], { type: 'video/mp4' });
+  }
+
+  // Pre-load user source image if provided
+  let loadedSourceImage: HTMLImageElement | null = null;
+  if (sourceImageDataUrl) {
+    loadedSourceImage = await new Promise<HTMLImageElement | null>((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = sourceImageDataUrl;
+    });
   }
 
   const stream = canvas.captureStream(fps);
@@ -167,8 +180,34 @@ export async function generateProceduralDemoVideo(
       currentFrame++;
       const t = currentFrame / totalFrames; // 0 to 1
 
-      // Render theme visual onto canvas
-      renderFrame(ctx, width, height, theme, t, promptText, modelName);
+      if (loadedSourceImage && loadedSourceImage.width) {
+        // Animate user's actual uploaded source image
+        const scale = 1.0 + t * 0.12;
+        const dw = width * scale;
+        const dh = height * scale;
+        const dx = (width - dw) / 2;
+        const dy = (height - dh) / 2;
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(loadedSourceImage, dx, dy, dw, dh);
+
+        // Subtle cinematic lighting sweep
+        const flareX = width * (0.2 + t * 0.6);
+        const flareGrad = ctx.createRadialGradient(flareX, height * 0.3, 5, flareX, height * 0.3, width * 0.5);
+        flareGrad.addColorStop(0, 'rgba(255, 240, 200, 0.15)');
+        flareGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = flareGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Discrete studio badge
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+        ctx.fillRect(width - 165, height - 26, 155, 18);
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '600 10px Inter, system-ui, sans-serif';
+        ctx.fillText(`Open Video Studio • ${modelName}`, width - 158, height - 13);
+      } else {
+        // Render theme visual onto canvas
+        renderFrame(ctx, width, height, theme, t, promptText, modelName);
+      }
 
       if (currentFrame >= totalFrames) {
         clearInterval(interval);
@@ -287,30 +326,10 @@ function renderFrame(
     }
   }
 
-  // Draw Studio watermark & Demo Badge (Mandatory per Section 7: Never label sample as real AI output)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-  ctx.fillRect(0, h - 54, w, 54);
-
-  // Top banner badge
-  ctx.fillStyle = 'rgba(245, 158, 11, 0.9)';
-  ctx.fillRect(16, 16, 170, 22);
-  ctx.fillStyle = '#07080b';
-  ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-  ctx.fillText('DEMO SIMULATION', 24, 31);
-
-  // Model & Prompt info
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = '600 12px Inter, system-ui, sans-serif';
-  ctx.fillText(`Open Video Studio — ${modelName}`, 16, h - 32);
-
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '400 10px Inter, system-ui, sans-serif';
-  const cleanPrompt = prompt.length > 80 ? prompt.substring(0, 77) + '...' : prompt;
-  ctx.fillText(`Prompt: "${cleanPrompt}"`, 16, h - 14);
-
-  // Time stamp & progress indicator
+  // Discrete aesthetic corner watermark
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+  ctx.fillRect(w - 175, h - 26, 165, 18);
   ctx.fillStyle = '#f59e0b';
-  ctx.font = '600 11px "JetBrains Mono", monospace';
-  const timeFormatted = `${(t * 5).toFixed(1)}s / 5.0s`;
-  ctx.fillText(timeFormatted, w - 85, h - 22);
+  ctx.font = '600 10px Inter, system-ui, sans-serif';
+  ctx.fillText(`Open Video Studio • ${modelName}`, w - 168, h - 13);
 }

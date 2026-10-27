@@ -335,7 +335,8 @@ export class DemoProvider implements IVideoProvider {
         job.request.prompt,
         modelName,
         job.request.durationSeconds || 4,
-        job.request.fps || 16
+        job.request.fps || 16,
+        job.request.sourceImage?.dataUrl
       );
 
       const objectUrl = URL.createObjectURL(blob);

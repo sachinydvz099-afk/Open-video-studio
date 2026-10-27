@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { RealisticAiProvider } from '../providers/RealisticAiProvider';
 import { DemoProvider } from '../providers/DemoProvider';
 import { HuggingFaceGradioProvider } from '../providers/HuggingFaceGradioProvider';
 import { CustomProvider } from '../providers/CustomProvider';
@@ -16,6 +17,51 @@ describe('Provider Architecture Tests', () => {
     fps: 16,
     createdAt: Date.now(),
   };
+
+  describe('RealisticAiProvider', () => {
+    it('returns capabilities marked as real inference and free tier', async () => {
+      const provider = new RealisticAiProvider();
+      const caps = await provider.getCapabilities();
+
+      expect(caps.isRealInference).toBe(true);
+      expect(caps.isFreeTier).toBe(true);
+      expect(caps.requiresAuth).toBe(false);
+      expect(caps.supportedModels).toContain('wan2.1-t2v-14b');
+      expect(caps.supportedModes).toContain('text-to-video');
+      expect(caps.supportedModes).toContain('image-to-video');
+    });
+
+    it('submits a realistic AI job and returns queued status', async () => {
+      const provider = new RealisticAiProvider();
+      const sub = await provider.submitJob(dummyRequest);
+
+      expect(sub.jobId).toBe(dummyRequest.id);
+      expect(sub.status).toBe('queued');
+      expect(sub.initialStep.phase).toBe('queued');
+
+      const status = await provider.getJobStatus(dummyRequest.id);
+      expect(status.jobId).toBe(dummyRequest.id);
+      expect(status.isSimulated).toBe(false);
+    });
+
+    it('supports realistic AI job cancellation', async () => {
+      const provider = new RealisticAiProvider();
+      await provider.submitJob({ ...dummyRequest, id: 'cancel-ai-test' });
+
+      const cancelled = await provider.cancelJob('cancel-ai-test');
+      expect(cancelled).toBe(true);
+
+      const status = await provider.getJobStatus('cancel-ai-test');
+      expect(status.status).toBe('cancelled');
+      expect(status.error?.code).toBe('CANCELLED');
+    });
+
+    it('tests connection successfully', async () => {
+      const provider = new RealisticAiProvider();
+      const test = await provider.testConnection();
+      expect(test.success).toBe(true);
+    });
+  });
 
   describe('DemoProvider', () => {
     it('returns capabilities marked as simulated and free', async () => {

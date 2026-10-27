@@ -34,7 +34,7 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
 
   constructor(config: HuggingFaceConfig) {
     this.config = {
-      spaceId: config.spaceId || 'Wan-AI/Wan2.1-T2V-14B',
+      spaceId: config.spaceId || 'multimodalart/wan2-1-fast',
       userToken: config.userToken,
       customEndpointUrl: config.customEndpointUrl,
     };
@@ -92,12 +92,12 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
 
     const parts = cleaned.split('/');
     if (parts.length === 2) {
-      const owner = parts[0].toLowerCase().replace(/[^a-z0-9_-]/g, '');
-      const space = parts[1].toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const owner = parts[0].toLowerCase().replace(/\./g, '-').replace(/[^a-z0-9_-]/g, '');
+      const space = parts[1].toLowerCase().replace(/\./g, '-').replace(/[^a-z0-9_-]/g, '');
       return `https://${owner}-${space}.hf.space`;
     }
 
-    return `https://${cleaned.toLowerCase().replace(/[^a-z0-9_-]/g, '')}.hf.space`;
+    return `https://${cleaned.toLowerCase().replace(/\./g, '-').replace(/[^a-z0-9_-]/g, '')}.hf.space`;
   }
 
   private getAuthHeaders(): Record<string, string> {
@@ -119,33 +119,42 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-      const response = await fetch(`${endpoint}/info`, {
+      // Probe Gradio 4/5 API first, fallback to legacy Gradio 3
+      let response = await fetch(`${endpoint}/gradio_api/info`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
         signal: controller.signal,
-      });
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        response = await fetch(`${endpoint}/info`, {
+          method: 'GET',
+          headers: this.getAuthHeaders(),
+          signal: controller.signal,
+        }).catch(() => null);
+      }
 
       clearTimeout(timeoutId);
       const latencyMs = Math.round(performance.now() - startTime);
 
-      if (response.ok) {
-        const info = await response.json();
+      if (response && response.ok) {
+        const info = await response.json().catch(() => ({}));
         const namedEndpoints = info?.named_endpoints ? Object.keys(info.named_endpoints) : [];
         return {
           success: true,
-          message: `Connected to Space successfully! Detected endpoints: ${
+          message: `Connected to Space successfully! Active endpoints: ${
             namedEndpoints.length > 0 ? namedEndpoints.join(', ') : 'Gradio queue active'
           }`,
           latencyMs,
         };
-      } else if (response.status === 503) {
+      } else if (response && response.status === 503) {
         return {
           success: false,
           message:
             'Hugging Face Space is currently sleeping or starting up. Visit the Space page to wake it.',
           latencyMs,
         };
-      } else if (response.status === 401 || response.status === 403) {
+      } else if (response && (response.status === 401 || response.status === 403)) {
         return {
           success: false,
           message:
@@ -155,7 +164,7 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
       } else {
         return {
           success: false,
-          message: `Space responded with HTTP ${response.status}: ${response.statusText}`,
+          message: `Space responded with HTTP ${response?.status || 'network error'}. Verify Space ID or try Realistic AI Engine.`,
           latencyMs,
         };
       }
@@ -171,7 +180,7 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
       }
       return {
         success: false,
-        message: `Network or CORS error connecting to ${endpoint}. (If accessing a private space, verify token or use Demo Mode).`,
+        message: `Network or CORS error connecting to ${endpoint}. (If accessing a private space, verify token or use Realistic AI Engine).`,
         latencyMs,
       };
     }
@@ -312,8 +321,9 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
         etaSeconds: 40,
       };
 
-      // 2. Submit to /queue/join
-      const joinResponse = await fetch(`${endpointUrl}/queue/join`, {
+      // 2. Submit to queue (try /gradio_api/queue/join then fallback to /queue/join)
+      let apiPrefix = '/gradio_api';
+      let joinResponse = await fetch(`${endpointUrl}/gradio_api/queue/join`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
@@ -324,17 +334,34 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
           session_hash: sessionHash,
         }),
         signal: controller.signal,
-      });
+      }).catch(() => null);
 
-      if (!joinResponse.ok) {
-        if (joinResponse.status === 429) {
+      if (!joinResponse || joinResponse.status === 404) {
+        apiPrefix = '';
+        joinResponse = await fetch(`${endpointUrl}/queue/join`, {
+          method: 'POST',
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify({
+            data: dataPayload,
+            event_data: null,
+            fn_index: 0,
+            trigger_id: null,
+            session_hash: sessionHash,
+          }),
+          signal: controller.signal,
+        });
+      }
+
+      if (!joinResponse || !joinResponse.ok) {
+        const status = joinResponse?.status || 500;
+        if (status === 429) {
           throw {
             code: 'RATE_LIMIT',
-            message: 'Hugging Face ZeroGPU daily quota exceeded. Switch to Demo Mode or provide a personal HF token.',
+            message: 'Hugging Face ZeroGPU daily quota exceeded. Switch to Realistic AI Engine or provide a personal HF token.',
             retryable: true,
           };
         }
-        if (joinResponse.status === 503) {
+        if (status === 503) {
           throw {
             code: 'SPACE_SLEEPING',
             message: 'Target Hugging Face Space is currently sleeping. Please visit the space in a browser to restart it.',
@@ -343,12 +370,12 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
         }
         throw {
           code: 'PROVIDER_ERROR',
-          message: `Gradio queue rejected submission (HTTP ${joinResponse.status})`,
+          message: `Gradio queue rejected submission (HTTP ${status}). Switch to Realistic AI Engine for instant rendering.`,
           retryable: true,
         };
       }
 
-      // 3. Listen to SSE /queue/data stream
+      // 3. Listen to SSE queue data stream
       job.status = 'running';
       job.step = {
         phase: 'denoising_latents',
@@ -358,7 +385,7 @@ export class HuggingFaceGradioProvider implements IVideoProvider {
         progressPercent: 25,
       };
 
-      const sseResponse = await fetch(`${endpointUrl}/queue/data?session_hash=${sessionHash}`, {
+      const sseResponse = await fetch(`${endpointUrl}${apiPrefix}/queue/data?session_hash=${sessionHash}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
         signal: controller.signal,

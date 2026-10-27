@@ -5,6 +5,7 @@ import { AspectRatioPicker } from './AspectRatioPicker';
 import { ModelSelector } from './ModelSelector';
 import { ExamplePromptsModal } from './ExamplePromptsModal';
 import { GenerationProgressCard } from './GenerationProgressCard';
+import { ProviderSelectorBar } from './ProviderSelectorBar';
 import { VideoPlayer } from '../player/VideoPlayer';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
@@ -143,7 +144,8 @@ export const TextToVideoWorkspace: React.FC<TextToVideoWorkspaceProps> = ({ onOp
             Zero ₹ Cost
           </Badge>
         </div>
-      </div>
+      {/* Generation Engine Switcher Bar */}
+      <ProviderSelectorBar />
 
       {/* Main Two-Column Studio Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -329,7 +331,7 @@ export const TextToVideoWorkspace: React.FC<TextToVideoWorkspaceProps> = ({ onOp
               {isGenerating ? 'Synthesizing Latents...' : 'Generate AI Video'}
             </Button>
             <p className="text-center text-[11px] text-slate-500 mt-2">
-              Default runs in Demo Mode (100% offline, zero GPU required). Switch to Hugging Face Space in Settings.
+              ⚡ Powered by Realistic AI Video Engine. Real photorealistic AI video rendered directly to WebM/MP4.
             </p>
           </div>
         </div>

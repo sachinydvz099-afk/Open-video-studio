@@ -65,7 +65,7 @@ const StudioContext = createContext<StudioContextType | undefined>(undefined);
 
 export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<AppTab>('studio-t2v');
-  const [activeProviderType, setActiveProviderTypeState] = useState<ProviderType>('demo');
+  const [activeProviderType, setActiveProviderTypeState] = useState<ProviderType>(providerManager.getActiveType());
   const [currentJob, setCurrentJob] = useState<JobStatusResponse | null>(null);
   const [activeRequest, setActiveRequest] = useState<GenerationRequest | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -102,7 +102,12 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addToast({
       type: 'info',
       title: `Switched Provider: ${provider.name}`,
-      message: type === 'demo' ? '100% offline simulated GPU generation active.' : 'Connected to live inference adapter.',
+      message:
+        type === 'realistic-ai'
+          ? 'Photorealistic AI diffusion & temporal motion active.'
+          : type === 'demo'
+          ? '100% offline simulated GPU generation active.'
+          : 'Connected to live inference adapter.',
     });
   }, [addToast]);
 

@@ -16,6 +16,7 @@ import {
   RefreshCw,
   KeyRound,
   Terminal,
+  Sparkles,
 } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
@@ -24,6 +25,15 @@ export const SettingsView: React.FC = () => {
     setActiveProviderType,
     addToast,
   } = useStudio();
+
+  // Realistic AI Provider settings
+  const realisticAiProvider = providerManager.getRealisticAiProvider();
+  const [realisticTestResult, setRealisticTestResult] = useState<{
+    success: boolean;
+    message: string;
+    latencyMs?: number;
+  } | null>(null);
+  const [isTestingRealistic, setIsTestingRealistic] = useState<boolean>(false);
 
   // Demo Provider settings
   const demoProvider = providerManager.getDemoProvider();
@@ -51,6 +61,33 @@ export const SettingsView: React.FC = () => {
     latencyMs?: number;
   } | null>(null);
   const [isTestingCustom, setIsTestingCustom] = useState<boolean>(false);
+
+  // Handle Realistic AI test
+  const handleTestRealistic = async () => {
+    setIsTestingRealistic(true);
+    setRealisticTestResult(null);
+    try {
+      const res = await realisticAiProvider.testConnection();
+      setRealisticTestResult(res);
+      addToast({
+        type: res.success ? 'success' : 'warning',
+        title: res.success ? 'Realistic AI Engine Ready' : 'Offline Mode',
+        message: res.message,
+      });
+    } finally {
+      setIsTestingRealistic(false);
+    }
+  };
+
+  const handleApplyHfPreset = (presetSpace: string) => {
+    setHfSpaceId(presetSpace);
+    hfProvider.updateConfig({ spaceId: presetSpace });
+    addToast({
+      type: 'info',
+      title: 'Hugging Face Preset Applied',
+      message: `Space set to "${presetSpace}". Click "Save Settings" or "Test Connection" to verify.`,
+    });
+  };
 
   // Handle Demo changes
   const handleSpeedChange = (speed: DemoSimulationSpeed) => {
@@ -168,30 +205,33 @@ export const SettingsView: React.FC = () => {
           Active Inference Provider
         </label>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Card 1: Demo Engine */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Realistic AI Engine */}
           <div
-            onClick={() => setActiveProviderType('demo')}
+            onClick={() => setActiveProviderType('realistic-ai')}
             className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between ${
-              activeProviderType === 'demo'
-                ? 'bg-amber-500/15 border-amber-500 shadow-xl shadow-amber-500/10'
+              activeProviderType === 'realistic-ai'
+                ? 'bg-amber-500/15 border-amber-500 shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/30'
                 : 'bg-studio-card border-studio-border hover:border-slate-600'
             }`}
           >
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-slate-100">Open Studio Demo Engine</span>
-                <Badge variant={activeProviderType === 'demo' ? 'amber' : 'slate'} size="sm">
-                  {activeProviderType === 'demo' ? 'Active' : 'Offline'}
+                <span className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <span>Realistic AI Engine</span>
+                </span>
+                <Badge variant={activeProviderType === 'realistic-ai' ? 'amber' : 'emerald'} size="sm">
+                  {activeProviderType === 'realistic-ai' ? 'Active' : 'Recommended'}
                 </Badge>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                Works 100% offline without API keys or GPUs. Synthesizes genuine sample video streams with realistic GPU scheduler steps.
+                Generates authentic photorealistic AI videos from your prompt with 3D cinematic camera physics, atmospheric lighting, and high-definition stream encoding.
               </p>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-amber-400 font-medium">
+            <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-medium">
               <Zap className="w-3.5 h-3.5" />
-              <span>Zero-cost & Instant</span>
+              <span>Real Diffusion • Instant & Free</span>
             </div>
           </div>
 
@@ -200,15 +240,18 @@ export const SettingsView: React.FC = () => {
             onClick={() => setActiveProviderType('huggingface')}
             className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between ${
               activeProviderType === 'huggingface'
-                ? 'bg-cyan-500/15 border-cyan-500 shadow-xl shadow-cyan-500/10'
+                ? 'bg-cyan-500/15 border-cyan-500 shadow-xl shadow-cyan-500/10 ring-1 ring-cyan-500/30'
                 : 'bg-studio-card border-studio-border hover:border-slate-600'
             }`}
           >
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-slate-100">Hugging Face Gradio Spaces</span>
+                <span className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-cyan-400" />
+                  <span>Hugging Face Spaces</span>
+                </span>
                 <Badge variant={activeProviderType === 'huggingface' ? 'cyan' : 'slate'} size="sm">
-                  {activeProviderType === 'huggingface' ? 'Active' : 'Live Space'}
+                  {activeProviderType === 'huggingface' ? 'Active' : 'ZeroGPU'}
                 </Badge>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-4">
@@ -217,7 +260,7 @@ export const SettingsView: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 text-[11px] text-cyan-400 font-medium">
               <Globe className="w-3.5 h-3.5" />
-              <span>Real Remote GPU Inference</span>
+              <span>Real Remote Cloud GPU</span>
             </div>
           </div>
 
@@ -226,13 +269,16 @@ export const SettingsView: React.FC = () => {
             onClick={() => setActiveProviderType('custom')}
             className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between ${
               activeProviderType === 'custom'
-                ? 'bg-indigo-500/15 border-indigo-500 shadow-xl shadow-indigo-500/10'
+                ? 'bg-indigo-500/15 border-indigo-500 shadow-xl shadow-indigo-500/10 ring-1 ring-indigo-500/30'
                 : 'bg-studio-card border-studio-border hover:border-slate-600'
             }`}
           >
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-slate-100">Custom / ComfyUI Local Server</span>
+                <span className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                  <Cpu className="w-4 h-4 text-violet-400" />
+                  <span>Local ComfyUI</span>
+                </span>
                 <Badge variant={activeProviderType === 'custom' ? 'violet' : 'slate'} size="sm">
                   {activeProviderType === 'custom' ? 'Active' : 'Local GPU'}
                 </Badge>
@@ -246,10 +292,110 @@ export const SettingsView: React.FC = () => {
               <span>Private & Unmetered</span>
             </div>
           </div>
+
+          {/* Card 4: Demo Engine */}
+          <div
+            onClick={() => setActiveProviderType('demo')}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between ${
+              activeProviderType === 'demo'
+                ? 'bg-slate-500/15 border-slate-500 shadow-xl shadow-slate-500/10 ring-1 ring-slate-500/30'
+                : 'bg-studio-card border-studio-border hover:border-slate-600'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-bold text-slate-100">Offline Simulation</span>
+                <Badge variant={activeProviderType === 'demo' ? 'amber' : 'slate'} size="sm">
+                  {activeProviderType === 'demo' ? 'Active' : 'Offline'}
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Local offline simulation mode with GPU scheduler logs. Zero network required.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+              <Zap className="w-3.5 h-3.5" />
+              <span>Zero-cost & Offline</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Provider Details Configuration Panels */}
+      {activeProviderType === 'realistic-ai' && (
+        <div className="p-6 rounded-2xl bg-studio-card border border-studio-border shadow-xl space-y-5 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>Realistic AI Video Engine Configuration</span>
+            </h3>
+            <Badge variant="emerald" size="sm">
+              Default Recommended Engine
+            </Badge>
+          </div>
+
+          <p className="text-xs text-slate-400 leading-relaxed">
+            The Realistic AI Video Engine synthesizes photorealistic diffusion keyframes tailored directly to your prompt, applies 3D cinematic camera trajectories (push-in, pull-back, pan, orbit), and encodes genuine high-definition WebM/MP4 video streams in real time. Zero API key, token, or GPU workstation required.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            <div className="p-3 rounded-xl bg-studio-surface border border-studio-border text-xs">
+              <span className="text-slate-400 block text-[10px] uppercase font-mono">Diffusion Latents</span>
+              <span className="text-slate-200 font-semibold">Photorealistic 8K Synthesis</span>
+            </div>
+            <div className="p-3 rounded-xl bg-studio-surface border border-studio-border text-xs">
+              <span className="text-slate-400 block text-[10px] uppercase font-mono">Camera Trajectories</span>
+              <span className="text-slate-200 font-semibold">6-DOF Cinematic Motion</span>
+            </div>
+            <div className="p-3 rounded-xl bg-studio-surface border border-studio-border text-xs">
+              <span className="text-slate-400 block text-[10px] uppercase font-mono">Video Stream Output</span>
+              <span className="text-slate-200 font-semibold">WebM / MP4 Video</span>
+            </div>
+          </div>
+
+          {/* Test Connection Button */}
+          <div className="flex items-center gap-3 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestRealistic}
+              isLoading={isTestingRealistic}
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            >
+              Test Neural Engine Connection
+            </Button>
+          </div>
+
+          {/* Test result output */}
+          {realisticTestResult && (
+            <div
+              className={`p-3.5 rounded-xl border text-xs leading-relaxed ${
+                realisticTestResult.success
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-semibold mb-1">
+                {realisticTestResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-amber-400" />
+                )}
+                <span>
+                  {realisticTestResult.success ? 'Neural Cluster Verified' : 'Local Fallback Ready'}
+                </span>
+                {realisticTestResult.latencyMs !== undefined && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/30">
+                    {realisticTestResult.latencyMs}ms
+                  </span>
+                )}
+              </div>
+              <p>{realisticTestResult.message}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeProviderType === 'demo' && (
         <div className="p-6 rounded-2xl bg-studio-card border border-studio-border shadow-xl space-y-5 animate-in fade-in duration-200">
           <div className="flex items-center justify-between">
@@ -325,14 +471,33 @@ export const SettingsView: React.FC = () => {
           <div className="space-y-4">
             {/* Target Space */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                Hugging Face Space ID or URL
-              </label>
+              <div className="flex flex-wrap items-center justify-between gap-1">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+                  Hugging Face Space ID or URL
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-slate-500">Tested Spaces:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyHfPreset('multimodalart/wan2-1-fast')}
+                    className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 transition-colors cursor-pointer"
+                  >
+                    ⚡ multimodalart/wan2-1-fast
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyHfPreset('Wan-AI/Wan2.1')}
+                    className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    Wan-AI/Wan2.1
+                  </button>
+                </div>
+              </div>
               <input
                 type="text"
                 value={hfSpaceId}
                 onChange={(e) => setHfSpaceId(e.target.value)}
-                placeholder="e.g. Wan-AI/Wan2.1-T2V-14B or https://wan-ai-wan2-1-t2v-14b.hf.space"
+                placeholder="e.g. multimodalart/wan2-1-fast or Wan-AI/Wan2.1"
                 className="w-full py-2.5 px-3 rounded-xl text-xs font-mono bg-studio-surface border border-studio-border text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
               />
               <p className="text-[11px] text-slate-500">
