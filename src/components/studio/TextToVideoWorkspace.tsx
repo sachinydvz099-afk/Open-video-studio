@@ -144,6 +144,8 @@ export const TextToVideoWorkspace: React.FC<TextToVideoWorkspaceProps> = ({ onOp
             Zero ₹ Cost
           </Badge>
         </div>
+      </div>
+
       {/* Generation Engine Switcher Bar */}
       <ProviderSelectorBar />
 
